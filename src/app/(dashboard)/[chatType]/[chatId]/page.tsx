@@ -1,12 +1,13 @@
+import Chat from "@/components/Chat";
 import { notFound } from "next/navigation";
-import React from "react";
 
 const CHatRoomPage = async ({
   params,
 }: {
-  params: Promise<{ chatType: string }>;
+  params: Promise<{ chatType: string; chatId: string }>;
 }) => {
-  const { chatType } = await params;
+  const { chatType, chatId } = await params;
+  // console.log("chatId", chatId);
   const allowedChatType = [
     "conversation",
     "image_generation",
@@ -19,7 +20,7 @@ const CHatRoomPage = async ({
     return notFound();
   }
 
-  return <div>CHatRoomPage</div>;
+  return <Chat chatId={chatId} chatType={chatType} />;
 };
 
 export default CHatRoomPage;

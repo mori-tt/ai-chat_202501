@@ -17,10 +17,45 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useEffect, useState } from "react";
+import {
+  collection,
+  onSnapshot,
+  orderBy,
+  query,
+  where,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase/firebaseClient";
+import { useAuth } from "@/context/AuthContext";
+import { ChatRoom } from "@/types";
 
 const Sidebar = () => {
+  const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
   const pathname = usePathname();
   // console.log(pathname);
+  const { currentUser } = useAuth();
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const q = query(
+      collection(db, "chats"),
+      where("user_id", "==", currentUser?.uid),
+      orderBy("last_updated", "desc")
+    );
+    const unsubscribe = onSnapshot(q, (snapShot) => {
+      const fetchChatRooms = snapShot.docs.map((doc) => ({
+        id: doc.id,
+        first_message: doc.data().first_message,
+        type: doc.data().type,
+        user_id: doc.data().user_id,
+        last_updated: doc.data().last_updated,
+        // ...doc.data(),
+      }));
+      // console.log("fetchChatRooms", fetchChatRooms);
+      setChatRooms(fetchChatRooms);
+    });
+    return () => unsubscribe();
+  }, []);
   const routes = [
     {
       label: "Conversation",
@@ -84,426 +119,29 @@ const Sidebar = () => {
       <div className="flex flex-1 flex-col overflow-hidden space-y-1">
         <h2 className="text-xs font-medium px-2 py-4">Chat Room</h2>
         <div className="overflow-auto">
-          <Link
-            href={"#"}
-            // key={route.href}
-            className={cn(
-              "block p-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition rounded-lg"
-              // pathname.startsWith(route.href) && "bg-white/10"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-medium truncate">message</p>
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Ellipsis size={16} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>削除</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </Link>
-          <Link
-            href={"#"}
-            // key={route.href}
-            className={cn(
-              "block p-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition rounded-lg"
-              // pathname.startsWith(route.href) && "bg-white/10"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-medium truncate">message</p>
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Ellipsis size={16} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>削除</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </Link>
-          <Link
-            href={"#"}
-            // key={route.href}
-            className={cn(
-              "block p-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition rounded-lg"
-              // pathname.startsWith(route.href) && "bg-white/10"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-medium truncate">message</p>
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Ellipsis size={16} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>削除</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </Link>
-          <Link
-            href={"#"}
-            // key={route.href}
-            className={cn(
-              "block p-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition rounded-lg"
-              // pathname.startsWith(route.href) && "bg-white/10"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-medium truncate">message</p>
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Ellipsis size={16} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>削除</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </Link>
-          <Link
-            href={"#"}
-            // key={route.href}
-            className={cn(
-              "block p-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition rounded-lg"
-              // pathname.startsWith(route.href) && "bg-white/10"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-medium truncate">message</p>
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Ellipsis size={16} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>削除</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </Link>
-          <Link
-            href={"#"}
-            // key={route.href}
-            className={cn(
-              "block p-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition rounded-lg"
-              // pathname.startsWith(route.href) && "bg-white/10"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-medium truncate">message</p>
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Ellipsis size={16} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>削除</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </Link>
-          <Link
-            href={"#"}
-            // key={route.href}
-            className={cn(
-              "block p-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition rounded-lg"
-              // pathname.startsWith(route.href) && "bg-white/10"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-medium truncate">message</p>
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Ellipsis size={16} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>削除</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </Link>
-          <Link
-            href={"#"}
-            // key={route.href}
-            className={cn(
-              "block p-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition rounded-lg"
-              // pathname.startsWith(route.href) && "bg-white/10"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-medium truncate">message</p>
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Ellipsis size={16} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>削除</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </Link>
-          <Link
-            href={"#"}
-            // key={route.href}
-            className={cn(
-              "block p-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition rounded-lg"
-              // pathname.startsWith(route.href) && "bg-white/10"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-medium truncate">message</p>
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Ellipsis size={16} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>削除</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </Link>
-          <Link
-            href={"#"}
-            // key={route.href}
-            className={cn(
-              "block p-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition rounded-lg"
-              // pathname.startsWith(route.href) && "bg-white/10"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-medium truncate">message</p>
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Ellipsis size={16} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>削除</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </Link>
-          <Link
-            href={"#"}
-            // key={route.href}
-            className={cn(
-              "block p-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition rounded-lg"
-              // pathname.startsWith(route.href) && "bg-white/10"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-medium truncate">message</p>
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Ellipsis size={16} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>削除</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </Link>
-          <Link
-            href={"#"}
-            // key={route.href}
-            className={cn(
-              "block p-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition rounded-lg"
-              // pathname.startsWith(route.href) && "bg-white/10"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-medium truncate">message</p>
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Ellipsis size={16} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>削除</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </Link>
-          <Link
-            href={"#"}
-            // key={route.href}
-            className={cn(
-              "block p-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition rounded-lg"
-              // pathname.startsWith(route.href) && "bg-white/10"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-medium truncate">message</p>
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Ellipsis size={16} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>削除</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </Link>
-          <Link
-            href={"#"}
-            // key={route.href}
-            className={cn(
-              "block p-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition rounded-lg"
-              // pathname.startsWith(route.href) && "bg-white/10"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-medium truncate">message</p>
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Ellipsis size={16} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>削除</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </Link>
-          <Link
-            href={"#"}
-            // key={route.href}
-            className={cn(
-              "block p-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition rounded-lg"
-              // pathname.startsWith(route.href) && "bg-white/10"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-medium truncate">message</p>
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Ellipsis size={16} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>削除</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </Link>
-          <Link
-            href={"#"}
-            // key={route.href}
-            className={cn(
-              "block p-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition rounded-lg"
-              // pathname.startsWith(route.href) && "bg-white/10"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-medium truncate">message</p>
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Ellipsis size={16} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>削除</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </Link>
-          <Link
-            href={"#"}
-            // key={route.href}
-            className={cn(
-              "block p-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition rounded-lg"
-              // pathname.startsWith(route.href) && "bg-white/10"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-medium truncate">message</p>
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Ellipsis size={16} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>削除</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </Link>
-          <Link
-            href={"#"}
-            // key={route.href}
-            className={cn(
-              "block p-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition rounded-lg"
-              // pathname.startsWith(route.href) && "bg-white/10"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-medium truncate">message</p>
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Ellipsis size={16} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>削除</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </Link>
-          <Link
-            href={"#"}
-            // key={route.href}
-            className={cn(
-              "block p-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition rounded-lg"
-              // pathname.startsWith(route.href) && "bg-white/10"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-medium truncate">message</p>
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Ellipsis size={16} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>削除</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </Link>
-          <Link
-            href={"#"}
-            // key={route.href}
-            className={cn(
-              "block p-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition rounded-lg"
-              // pathname.startsWith(route.href) && "bg-white/10"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-medium truncate">message</p>
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Ellipsis size={16} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>削除</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </Link>
-          <Link
-            href={"#"}
-            // key={route.href}
-            className={cn(
-              "block p-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition rounded-lg"
-              // pathname.startsWith(route.href) && "bg-white/10"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-medium truncate">message</p>
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Ellipsis size={16} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>削除</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </Link>
+          {chatRooms.map((room) => (
+            <Link
+              href={`/${room.type}/${room.id}`}
+              key={room.id}
+              // key={route.href}
+              className={cn(
+                "block p-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition rounded-lg",
+                pathname === `/${room.type}/${room.id}` && "bg-white/10"
+              )}
+            >
+              <div className="flex items-center justify-between">
+                <p className="font-medium truncate">{room.first_message}</p>
+                <DropdownMenu>
+                  <DropdownMenuTrigger>
+                    <Ellipsis size={16} />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem>削除</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
     </div>
