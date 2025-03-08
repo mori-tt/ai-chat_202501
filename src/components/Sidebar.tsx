@@ -36,26 +36,65 @@ const Sidebar = () => {
   const { currentUser } = useAuth();
 
   useEffect(() => {
-    if (!currentUser) return;
-    const q = query(
-      collection(db, "chats"),
-      where("user_id", "==", currentUser?.uid),
-      orderBy("last_updated", "desc")
-    );
-    const unsubscribe = onSnapshot(q, (snapShot) => {
-      const fetchChatRooms = snapShot.docs.map((doc) => ({
-        id: doc.id,
-        first_message: doc.data().first_message,
-        type: doc.data().type,
-        user_id: doc.data().user_id,
-        last_updated: doc.data().last_updated,
-        // ...doc.data(),
-      }));
-      // console.log("fetchChatRooms", fetchChatRooms);
-      setChatRooms(fetchChatRooms);
+    if (!currentUser) {
+      console.log("No user logged in, skipping chat rooms fetch");
+      setChatRooms([]); // 未認証の場合は空配列にリセット
+      return;
+    }
+
+    console.log("Fetching chat rooms for user ID:", currentUser.uid);
+    // 認証情報の詳細をデバッグ（利用可能なプロパティのみ）
+    console.log("Auth state:", {
+      uid: currentUser.uid,
+      providerId: currentUser.providerId,
+      displayName: currentUser.displayName,
     });
-    return () => unsubscribe();
-  }, []);
+
+    try {
+      const q = query(
+        collection(db, "chats"),
+        where("user_id", "==", currentUser.uid),
+        orderBy("last_updated", "desc")
+      );
+
+      console.log("Firebase query created, attaching listener...");
+
+      const unsubscribe = onSnapshot(
+        q,
+        (snapShot) => {
+          console.log(
+            "Snapshot received, document count:",
+            snapShot.docs.length
+          );
+          const fetchChatRooms = snapShot.docs.map((doc) => ({
+            id: doc.id,
+            first_message:
+              doc.data().first_message || doc.data().title || "新しいチャット",
+            type: doc.data().type,
+            user_id: doc.data().user_id,
+            last_updated: doc.data().last_updated,
+          }));
+          console.log("Processed chat rooms:", fetchChatRooms.length);
+          setChatRooms(fetchChatRooms);
+        },
+        (error) => {
+          console.error("Error fetching chat rooms:", error);
+          // エラーの詳細情報を表示
+          if (error.code) {
+            console.error("Error code:", error.code);
+          }
+          if (error.message) {
+            console.error("Error message:", error.message);
+          }
+        }
+      );
+
+      return () => unsubscribe();
+    } catch (error) {
+      console.error("Error setting up chat rooms listener:", error);
+      return () => {};
+    }
+  }, [currentUser]);
   const routes = [
     {
       label: "Conversation",

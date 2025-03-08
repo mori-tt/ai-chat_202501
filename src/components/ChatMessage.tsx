@@ -1,11 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import BotAvatar from "./BotAvatar";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { db } from "@/lib/firebase/firebaseClient";
 import { TextMessage } from "@/types";
 import UserAvatar from "./UserAvatar";
 import Panel from "./Panel";
+import MessageDisplay from "./MessageDisplay";
 
 interface ChatMessageProps {
   chatId?: string;
@@ -14,8 +15,12 @@ interface ChatMessageProps {
 
 const ChatMessage = ({ chatId, chatType }: ChatMessageProps) => {
   const [messages, setMessages] = useState<TextMessage[]>([]);
-  //  console.log("chatId", chatId);
-  console.log("ChatMessage chatType:", chatType);
+  const endRef = useRef<null | HTMLDivElement>(null);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages.length]);
+
   useEffect(() => {
     if (!chatId) return;
     const q = query(
@@ -48,11 +53,12 @@ const ChatMessage = ({ chatId, chatType }: ChatMessageProps) => {
               <div>
                 {/* メッセージのタイプによってタグを変える */}
                 <div className="bg-white p-4 rounded-lg shadow break-all whitespace-pre-wrap">
-                  <p>{message.content}</p>
+                  <MessageDisplay content={message.content} />
                 </div>
               </div>
             </div>
           ))}
+          <div ref={endRef}></div>
         </div>
       )}
     </>

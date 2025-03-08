@@ -1,16 +1,19 @@
+"use client";
+import { useState } from "react";
 import ChatForm from "./ChatForm";
 import ChatMessage from "./ChatMessage";
 
 interface ChatProps {
-  chatId?: string;
+  initialChatId?: string;
   chatType: string;
 }
 
-const Chat = ({ chatId, chatType }: ChatProps) => {
+const Chat = ({ initialChatId, chatType }: ChatProps) => {
+  const [chatId, setChatId] = useState(initialChatId);
   return (
     <>
       <ChatMessage chatId={chatId} chatType={chatType} />
-      <ChatForm />
+      <ChatForm chatId={chatId} setChatId={setChatId} chatType={chatType} />
     </>
   );
 };

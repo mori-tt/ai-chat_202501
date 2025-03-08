@@ -20,7 +20,7 @@ const CHatRoomPage = async ({
     return notFound();
   }
 
-  return <Chat chatId={chatId} chatType={chatType} />;
+  return <Chat initialChatId={chatId} chatType={chatType} />;
 };
 
 export default CHatRoomPage;
