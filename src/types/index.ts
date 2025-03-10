@@ -37,4 +37,12 @@ export interface ImageMessage {
   sender: "user" | "assistant";
 }
 
-export type Message = TextMessage | ImageMessage;
+export interface AudioMessage {
+  id: string;
+  content: string;
+  type: "audio";
+  created_at: Timestamp;
+  sender: "user" | "assistant";
+}
+
+export type Message = TextMessage | ImageMessage | AudioMessage;

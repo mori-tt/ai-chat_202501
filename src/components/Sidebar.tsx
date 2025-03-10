@@ -10,7 +10,7 @@ import {
 import BotAvatar from "./BotAvatar";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,11 +28,12 @@ import {
 import { db } from "@/lib/firebase/firebaseClient";
 import { useAuth } from "@/context/AuthContext";
 import { ChatRoom } from "@/types";
+import axios from "axios";
 
 const Sidebar = () => {
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
   const pathname = usePathname();
-  // console.log(pathname);
+  const router = useRouter();
   const { currentUser } = useAuth();
 
   useEffect(() => {
@@ -78,7 +79,17 @@ const Sidebar = () => {
           setChatRooms(fetchChatRooms);
         },
         (error) => {
+          // エラーハンドリングを改善
           console.error("Error fetching chat rooms:", error);
+
+          // permission-deniedエラーの場合は特別な処理
+          if (error.code === "permission-denied") {
+            console.log(
+              "権限エラーが発生しました - おそらくドキュメントが削除されたためです"
+            );
+            // 必要に応じてリスナーを再接続するロジックをここに追加できます
+          }
+
           // エラーの詳細情報を表示
           if (error.code) {
             console.error("Error code:", error.code);
@@ -127,6 +138,27 @@ const Sidebar = () => {
       Icon: FileSearch2,
     },
   ];
+  const handleDeleteChat = async (chatId: string) => {
+    try {
+      // 現在のパスが削除対象のチャットを表示しているかチェック
+      const isCurrentChatBeingDeleted = pathname.includes(chatId);
+
+      // 楽観的UIアップデート
+      setChatRooms((prevRooms) =>
+        prevRooms.filter((room) => room.id !== chatId)
+      );
+
+      const response = await axios.delete(`/api/deleteChat/${chatId}`);
+      console.log("Chat deleted successfully:", response.data);
+
+      // 削除したチャットを表示していた場合はホームへリダイレクト
+      if (isCurrentChatBeingDeleted) {
+        router.push("/");
+      }
+    } catch (error) {
+      console.error("Error deleting chat:", error);
+    }
+  };
   return (
     <div className="space-y-4 bg-gray-900 text-white p-3 h-full flex flex-col">
       {/* タイトル&ロゴエリア */}
@@ -148,7 +180,7 @@ const Sidebar = () => {
             )}
           >
             <div className="flex items-center">
-              <route.Icon className={cn("h-5 w-5, mr-3", route.color)} />
+              <route.Icon className={cn("h-5 w-5 mr-3", route.color)} />
               <p>{route.label}</p>
             </div>
           </Link>
@@ -175,7 +207,9 @@ const Sidebar = () => {
                     <Ellipsis size={16} />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem>削除</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleDeleteChat(room.id)}>
+                      削除
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>

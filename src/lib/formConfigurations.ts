@@ -1,5 +1,9 @@
 import { ChatFormData, ChatType } from "@/types";
-import { conversationSchema, imageGenarationSchema } from "./validationSchema";
+import {
+  conversationSchema,
+  imageGenarationSchema,
+  textToSpeechSchema,
+} from "./validationSchema";
 
 export const amountOptions = [
   {
@@ -41,7 +45,7 @@ const formConfig = {
     schema: imageGenarationSchema,
     defaultValue: { prompt: "", amount: "1", size: "256x256" },
   },
-  text_to_speech: { schema: conversationSchema, defaultValue: { prompt: "" } },
+  text_to_speech: { schema: textToSpeechSchema, defaultValue: { prompt: "" } },
   speech_to_text: { schema: conversationSchema, defaultValue: { prompt: "" } },
   image_analysis: { schema: conversationSchema, defaultValue: { prompt: "" } },
 };
@@ -71,6 +75,10 @@ export const getRequestData = (
         size: values.size,
         chatId: chatId,
       };
+      break;
+    case "text_to_speech":
+      apiUrl = "/api/text_to_speech";
+      apiData = { prompt: values.prompt, chatId: chatId };
       break;
   }
   return { apiUrl, apiData };
