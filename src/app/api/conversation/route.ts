@@ -22,7 +22,7 @@ export async function POST(req: Request) {
       content: prompt,
       created_at: FieldValue.serverTimestamp(),
       sender: "user",
-      type: "conversation",
+      type: "text",
     });
 
     const messagesRef = db

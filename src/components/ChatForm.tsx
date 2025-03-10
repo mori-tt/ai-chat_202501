@@ -18,28 +18,47 @@ import { db } from "@/lib/firebase/firebaseClient";
 import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  amountOptions,
+  getFormCongfig,
+  getRequestData,
+  sizeOptions,
+} from "@/lib/formConfigurations";
+
+import { ChatFormData, ChatType } from "@/types";
 
 interface ChatFormProps {
   chatId?: string;
-  chatType: string;
+  chatType: ChatType;
   setChatId: React.Dispatch<React.SetStateAction<string | undefined>>;
 }
 
 const ChatForm = ({ chatId, chatType, setChatId }: ChatFormProps) => {
   const router = useRouter();
   const { currentUser } = useAuth();
-  const conversationSchema = z.object({
-    prompt: z.string().min(1, { message: "メッセージを入力してください。" }),
-  });
-  const form = useForm<z.infer<typeof conversationSchema>>({
-    resolver: zodResolver(conversationSchema),
-    defaultValues: { prompt: "" },
+  const { schema, defaultValue } = getFormCongfig(chatType);
+
+  console.log("schema", schema);
+  console.log("defaultValue", defaultValue);
+
+  const form = useForm<ChatFormData>({
+    resolver: zodResolver(schema),
+    defaultValues: defaultValue,
   });
 
   const isSubmitting = form.formState.isSubmitting;
 
-  const onSubmit = async (values: z.infer<typeof conversationSchema>) => {
-    console.log("フォーム送信開始:", values);
+  console.log("エラー内容", form.formState.errors);
+
+  const onSubmit = async (values: ChatFormData) => {
+    console.log("values.amount", values.amount);
 
     try {
       let chatRef;
@@ -61,10 +80,12 @@ const ChatForm = ({ chatId, chatType, setChatId }: ChatFormProps) => {
       } else {
         chatRef = doc(db, "chats", chatId);
       }
-      const response = await axios.post("/api/conversation", {
-        prompt: values.prompt,
-        chatId: chatRef.id,
-      });
+      const { apiUrl, apiData } = getRequestData(values, chatRef.id, chatType);
+      console.log("apiUrl", apiUrl);
+      console.log("apiData", apiData);
+
+      const response = await axios.post(apiUrl, apiData);
+
       console.log("API応答:", response.data);
 
       if (isNewChat) {
@@ -85,10 +106,71 @@ const ChatForm = ({ chatId, chatType, setChatId }: ChatFormProps) => {
       form.reset();
     }
   };
+
   return (
     <div className="bg-white p-3">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
+          {chatType === "image_generation" && (
+            <div className="flex items-center space-x-2">
+              {/* amount */}
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <Select
+                      disabled={isSubmitting}
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a verified email to display" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {amountOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+              {/* size */}
+              <FormField
+                control={form.control}
+                name="size"
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <Select
+                      disabled={isSubmitting}
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a verified email to display" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {sizeOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+            </div>
+          )}
           <div className="flex items-center space-x-2">
             <FormField
               control={form.control}

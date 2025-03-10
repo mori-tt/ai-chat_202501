@@ -3,10 +3,12 @@ import { useEffect, useRef, useState } from "react";
 import BotAvatar from "./BotAvatar";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { db } from "@/lib/firebase/firebaseClient";
-import { TextMessage } from "@/types";
+import { Message } from "@/types";
 import UserAvatar from "./UserAvatar";
 import Panel from "./Panel";
-import MessageDisplay from "./MessageDisplay";
+import TextMessageComponent from "./TextMessageComponent";
+import ImageMessageComponent from "./ImageMessageComponent";
+import { cn } from "@/lib/utils";
 
 interface ChatMessageProps {
   chatId?: string;
@@ -14,7 +16,7 @@ interface ChatMessageProps {
 }
 
 const ChatMessage = ({ chatId, chatType }: ChatMessageProps) => {
-  const [messages, setMessages] = useState<TextMessage[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const endRef = useRef<null | HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,6 +43,15 @@ const ChatMessage = ({ chatId, chatType }: ChatMessageProps) => {
     });
     return () => unsubscribe();
   }, [chatId]);
+
+  const getMessageComponent = (message: Message) => {
+    switch (message.type) {
+      case "text":
+        return <TextMessageComponent content={message.content} />;
+      case "image":
+        return <ImageMessageComponent images={message.content} />;
+    }
+  };
   return (
     <>
       {!chatId ? (
@@ -50,11 +61,9 @@ const ChatMessage = ({ chatId, chatType }: ChatMessageProps) => {
           {messages.map((message) => (
             <div key={message.id} className="flex space-x-4">
               {message.sender === "user" ? <UserAvatar /> : <BotAvatar />}
-              <div>
+              <div className={cn(message.type === "image" ? "flex-1" : "")}>
                 {/* メッセージのタイプによってタグを変える */}
-                <div className="bg-white p-4 rounded-lg shadow break-all whitespace-pre-wrap">
-                  <MessageDisplay content={message.content} />
-                </div>
+                <div>{getMessageComponent(message)}</div>
               </div>
             </div>
           ))}
