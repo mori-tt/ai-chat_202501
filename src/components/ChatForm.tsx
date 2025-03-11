@@ -1,12 +1,11 @@
 "use client";
-import React from "react";
-import { Form, FormControl, FormField, FormItem } from "./ui/form";
+import React, { useRef, useState } from "react";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "./ui/form";
 import { Textarea } from "./ui/textarea";
 import { useForm } from "react-hook-form";
 import { Button } from "./ui/button";
-import { LoaderCircle, Send } from "lucide-react";
+import { LoaderCircle, Paperclip, Send, Trash2 } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import {
   collection,
   addDoc,
@@ -17,7 +16,6 @@ import {
 import { db } from "@/lib/firebase/firebaseClient";
 import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
-import { useRouter } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -30,9 +28,12 @@ import {
   getFormCongfig,
   getRequestData,
   sizeOptions,
+  selectFirstMessage,
 } from "@/lib/formConfigurations";
 
 import { ChatFormData, ChatType } from "@/types";
+import { Input } from "./ui/input";
+import Image from "next/image";
 
 interface ChatFormProps {
   chatId?: string;
@@ -41,7 +42,9 @@ interface ChatFormProps {
 }
 
 const ChatForm = ({ chatId, chatType, setChatId }: ChatFormProps) => {
-  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  console.log("fileInputRef.current?.value", fileInputRef.current?.value);
+  const [audio, setAudio] = useState<File | null>(null);
   const { currentUser } = useAuth();
   const { schema, defaultValue } = getFormCongfig(chatType);
 
@@ -57,6 +60,14 @@ const ChatForm = ({ chatId, chatType, setChatId }: ChatFormProps) => {
 
   console.log("エラー内容", form.formState.errors);
 
+  const handleFileChange = (files: FileList | null) => {
+    console.log("files", files);
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    form.setValue("file", file);
+    setAudio(file);
+  };
+
   const onSubmit = async (values: ChatFormData) => {
     console.log("values.amount", values.amount);
 
@@ -70,7 +81,7 @@ const ChatForm = ({ chatId, chatType, setChatId }: ChatFormProps) => {
           last_updated: serverTimestamp(),
           type: chatType,
           user_id: currentUser?.uid,
-          first_message: values.prompt.substring(0, 30), // メッセージの最初の30文字をタイトルとして使用
+          first_message: selectFirstMessage(values, chatType),
         });
         console.log("新規チャット作成完了:", newChatDocRef.id);
 
@@ -102,13 +113,32 @@ const ChatForm = ({ chatId, chatType, setChatId }: ChatFormProps) => {
         "メッセージの送信に失敗しました。詳細はコンソールを確認してください。"
       );
     } finally {
-      // フォームをリセット
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      if (chatType === "speech_to_text") {
+        setAudio(null);
+      }
       form.reset();
     }
   };
 
+  const FilePreview = () => (
+    <div className="flex flex-wrap gap-2 mb-4">
+      {audio && (
+        <div className="flex items-center gap-2 p-4 rounded-lg">
+          <div className="relative h-10 w-10">
+            <Image src={"/audio_file.svg"} fill alt="audio_file" />
+          </div>
+          <p>{audio.name}</p>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="bg-white p-3">
+      {audio && <FilePreview />}
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           {chatType === "image_generation" && (
@@ -172,6 +202,44 @@ const ChatForm = ({ chatId, chatType, setChatId }: ChatFormProps) => {
             </div>
           )}
           <div className="flex items-center space-x-2">
+            {/* file */}
+            {(chatType === "speech_to_text" ||
+              chatType === "image_analysis") && (
+              <FormField
+                control={form.control}
+                name="file"
+                render={({
+                  field: { value, ref, onChange, ...fieldProps },
+                }) => {
+                  console.log("value", value);
+                  return (
+                    <FormItem>
+                      <FormLabel>
+                        <Paperclip />
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          ref={(e) => {
+                            fileInputRef.current = e;
+                            ref(e);
+                          }}
+                          {...fieldProps}
+                          type="file"
+                          multiple
+                          onChange={(event) => {
+                            const files = event.target.files;
+                            console.log("files", files);
+                            handleFileChange(files);
+                          }}
+                          className="hidden"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  );
+                }}
+              />
+            )}
+
             <FormField
               control={form.control}
               name="prompt"
@@ -179,10 +247,15 @@ const ChatForm = ({ chatId, chatType, setChatId }: ChatFormProps) => {
                 <FormItem className="w-full flex-1">
                   <FormControl>
                     <Textarea
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || chatType === "speech_to_text"}
                       {...field}
                       className="bg-slate-200"
                       rows={1}
+                      placeholder={
+                        chatType === "speech_to_text"
+                          ? "入力できません"
+                          : "チャットをはじめよう"
+                      }
                     />
                   </FormControl>
                 </FormItem>

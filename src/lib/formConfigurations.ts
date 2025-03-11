@@ -2,6 +2,7 @@ import { ChatFormData, ChatType } from "@/types";
 import {
   conversationSchema,
   imageGenarationSchema,
+  speechToTextSchema,
   textToSpeechSchema,
 } from "./validationSchema";
 
@@ -46,7 +47,10 @@ const formConfig = {
     defaultValue: { prompt: "", amount: "1", size: "256x256" },
   },
   text_to_speech: { schema: textToSpeechSchema, defaultValue: { prompt: "" } },
-  speech_to_text: { schema: conversationSchema, defaultValue: { prompt: "" } },
+  speech_to_text: {
+    schema: speechToTextSchema,
+    defaultValue: { file: undefined },
+  },
   image_analysis: { schema: conversationSchema, defaultValue: { prompt: "" } },
 };
 
@@ -80,6 +84,29 @@ export const getRequestData = (
       apiUrl = "/api/text_to_speech";
       apiData = { prompt: values.prompt, chatId: chatId };
       break;
+    case "speech_to_text":
+      apiUrl = "/api/speech_to_text";
+      const formDataSTT = new FormData();
+      formDataSTT.append("file", values.file);
+      formDataSTT.append("chatId", chatId);
+      apiData = formDataSTT;
+      break;
   }
   return { apiUrl, apiData };
+};
+
+export const selectFirstMessage = (
+  values: ChatFormData,
+  chatType: ChatType
+) => {
+  switch (chatType) {
+    case "speech_to_text":
+      return values.file.name;
+
+    case "image_analysis":
+      return values.prompt ? values.prompt : "ファイルを解析してください。";
+
+    default:
+      return values.prompt;
+  }
 };
