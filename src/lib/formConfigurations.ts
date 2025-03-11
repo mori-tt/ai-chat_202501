@@ -1,6 +1,7 @@
 import { ChatFormData, ChatType } from "@/types";
 import {
   conversationSchema,
+  imageAnalysisSchema,
   imageGenarationSchema,
   speechToTextSchema,
   textToSpeechSchema,
@@ -51,7 +52,10 @@ const formConfig = {
     schema: speechToTextSchema,
     defaultValue: { file: undefined },
   },
-  image_analysis: { schema: conversationSchema, defaultValue: { prompt: "" } },
+  image_analysis: {
+    schema: imageAnalysisSchema,
+    defaultValue: { prompt: "", files: undefined },
+  },
 };
 
 export const getFormCongfig = (chatType: ChatType) => {
@@ -90,6 +94,21 @@ export const getRequestData = (
       formDataSTT.append("file", values.file);
       formDataSTT.append("chatId", chatId);
       apiData = formDataSTT;
+      break;
+    case "image_analysis":
+      apiUrl = "/api/image_analysis";
+      const formDataIA = new FormData();
+      formDataIA.append(
+        "prompt",
+        values.prompt || "ファイルを解析してください。"
+      );
+      if (values.files) {
+        values.files.forEach((file) => {
+          formDataIA.append("files", file);
+        });
+      }
+      formDataIA.append("chatId", chatId);
+      apiData = formDataIA;
       break;
   }
   return { apiUrl, apiData };

@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "./ui/form";
 import { Textarea } from "./ui/textarea";
 import { useForm } from "react-hook-form";
@@ -45,11 +45,18 @@ const ChatForm = ({ chatId, chatType, setChatId }: ChatFormProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   console.log("fileInputRef.current?.value", fileInputRef.current?.value);
   const [audio, setAudio] = useState<File | null>(null);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const { currentUser } = useAuth();
   const { schema, defaultValue } = getFormCongfig(chatType);
 
-  console.log("schema", schema);
-  console.log("defaultValue", defaultValue);
+  // console.log("schema", schema);
+  // console.log("defaultValue", defaultValue);
+
+  useEffect(() => {
+    return () => {
+      imageUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, []);
 
   const form = useForm<ChatFormData>({
     resolver: zodResolver(schema),
@@ -60,12 +67,28 @@ const ChatForm = ({ chatId, chatType, setChatId }: ChatFormProps) => {
 
   console.log("エラー内容", form.formState.errors);
 
+  const files = form.watch("files");
+  console.log("ReactHookFormで管理している値", files);
+
   const handleFileChange = (files: FileList | null) => {
     console.log("files", files);
     if (!files || files.length === 0) return;
-    const file = files[0];
-    form.setValue("file", file);
-    setAudio(file);
+    if (chatType === "speech_to_text") {
+      const file = files[0];
+      form.setValue("file", file);
+      setAudio(file);
+    } else if (chatType === "image_analysis") {
+      const newFiles = Array.from(files);
+      console.log("newFiles", newFiles);
+      const imageUrls = newFiles.map((file) => {
+        return URL.createObjectURL(file);
+      });
+      console.log("imageUrls", imageUrls);
+      setImageUrls((prevImageUrls) => [...prevImageUrls, ...imageUrls]);
+
+      const updatedFiles = form.getValues("files") || [];
+      form.setValue("files", [...updatedFiles, ...newFiles]);
+    }
   };
 
   const onSubmit = async (values: ChatFormData) => {
@@ -118,13 +141,34 @@ const ChatForm = ({ chatId, chatType, setChatId }: ChatFormProps) => {
       }
       if (chatType === "speech_to_text") {
         setAudio(null);
+      } else {
+        imageUrls.forEach((url) => URL.revokeObjectURL(url));
+        setImageUrls([]);
       }
       form.reset();
     }
   };
 
+  const handleFileRemove = (index: number) => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+
+    URL.revokeObjectURL(imageUrls[index]);
+
+    setImageUrls((prevImageUrls) =>
+      prevImageUrls.filter((_, idx) => idx !== index)
+    );
+    if (files) {
+      const updatedFiles = files.filter((_, idx) => idx !== index);
+      console.log("updatedFiles", updatedFiles);
+      form.setValue("files", updatedFiles);
+    }
+  };
+
   const FilePreview = () => (
     <div className="flex flex-wrap gap-2 mb-4">
+      {/* speech_to_textの場合 */}
       {audio && (
         <div className="flex items-center gap-2 p-4 rounded-lg">
           <div className="relative h-10 w-10">
@@ -133,12 +177,32 @@ const ChatForm = ({ chatId, chatType, setChatId }: ChatFormProps) => {
           <p>{audio.name}</p>
         </div>
       )}
+      {/* image_analysisの場合 */}
+      {imageUrls.length > 0 &&
+        imageUrls.map((imageUrl, index) => (
+          <div key={index} className="relative group w-12 h-12">
+            <Image
+              src={imageUrl}
+              alt="File preview"
+              fill
+              className="rounded object-cover"
+            />
+            {!isSubmitting && (
+              <button
+                onClick={() => handleFileRemove(index)}
+                className="absolute -top-2 -right-2 p-1 text-white bg-black bg-opacity-75 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Trash2 size={12} />
+              </button>
+            )}
+          </div>
+        ))}
     </div>
   );
 
   return (
     <div className="bg-white p-3">
-      {audio && <FilePreview />}
+      {(audio || imageUrls.length > 0) && <FilePreview />}
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           {chatType === "image_generation" && (
@@ -207,7 +271,7 @@ const ChatForm = ({ chatId, chatType, setChatId }: ChatFormProps) => {
               chatType === "image_analysis") && (
               <FormField
                 control={form.control}
-                name="file"
+                name={chatType === "speech_to_text" ? "file" : "files"}
                 render={({
                   field: { value, ref, onChange, ...fieldProps },
                 }) => {
@@ -225,7 +289,7 @@ const ChatForm = ({ chatId, chatType, setChatId }: ChatFormProps) => {
                           }}
                           {...fieldProps}
                           type="file"
-                          multiple
+                          multiple={chatType === "image_analysis"}
                           onChange={(event) => {
                             const files = event.target.files;
                             console.log("files", files);
