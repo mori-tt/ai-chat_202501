@@ -1,5 +1,7 @@
+import { checkUserPermission, verifyToken } from "@/lib/firebase/auth";
 import { db } from "@/lib/firebase/firebaseAdmin";
 import { FieldValue } from "firebase-admin/firestore";
+import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
@@ -10,8 +12,38 @@ const openai = new OpenAI({
 // resパラメータを削除
 export async function POST(req: Request) {
   try {
+    const headersList = await headers();
+    const authHeader = headersList.get("Authorization");
+    // Tokenが添付されているか
+    if (!authHeader) {
+      return NextResponse.json(
+        { error: "Tokenが添付されていません" },
+        { status: 401 }
+      );
+    }
+
+    const token = authHeader.split("Bearer ")[1];
+    // デコード
+    const user = await verifyToken(token);
+    if (!user) {
+      return NextResponse.json(
+        { error: "無効なトークンです。" },
+        { status: 401 }
+      );
+    }
+
     const { prompt, chatId } = await req.json();
     console.log("リクエスト受信:", { prompt, chatId });
+
+    // firestoreのデータを操作してよいユーザーか
+    const hasPermission = await checkUserPermission(user.uid, chatId);
+
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: "操作が許可されていないか、リソースが存在しません" },
+        { status: 403 }
+      );
+    }
 
     if (!chatId) {
       return NextResponse.json({ error: "chatIdが必要です" }, { status: 400 });

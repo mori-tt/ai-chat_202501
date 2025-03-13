@@ -46,7 +46,7 @@ const ChatForm = ({ chatId, chatType, setChatId }: ChatFormProps) => {
   console.log("fileInputRef.current?.value", fileInputRef.current?.value);
   const [audio, setAudio] = useState<File | null>(null);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const { currentUser } = useAuth();
+  const { currentUser, userToken } = useAuth();
   const { schema, defaultValue } = getFormCongfig(chatType);
 
   // console.log("schema", schema);
@@ -118,7 +118,9 @@ const ChatForm = ({ chatId, chatType, setChatId }: ChatFormProps) => {
       console.log("apiUrl", apiUrl);
       console.log("apiData", apiData);
 
-      const response = await axios.post(apiUrl, apiData);
+      const response = await axios.post(apiUrl, apiData, {
+        headers: { Authorization: `Bearer ${userToken}` },
+      });
 
       console.log("API応答:", response.data);
 

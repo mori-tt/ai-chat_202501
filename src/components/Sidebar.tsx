@@ -34,7 +34,9 @@ const Sidebar = () => {
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
   const pathname = usePathname();
   const router = useRouter();
-  const { currentUser } = useAuth();
+  const { currentUser, userToken } = useAuth();
+
+  console.log("userToken", userToken);
 
   useEffect(() => {
     if (!currentUser) {
@@ -106,6 +108,7 @@ const Sidebar = () => {
       return () => {};
     }
   }, [currentUser]);
+
   const routes = [
     {
       label: "Conversation",
@@ -148,7 +151,9 @@ const Sidebar = () => {
         prevRooms.filter((room) => room.id !== chatId)
       );
 
-      const response = await axios.delete(`/api/deleteChat/${chatId}`);
+      const response = await axios.delete(`/api/deleteChat/${chatId}`, {
+        headers: { Authorization: `Bearer ${userToken}` },
+      });
       console.log("Chat deleted successfully:", response.data);
 
       // 削除したチャットを表示していた場合はホームへリダイレクト

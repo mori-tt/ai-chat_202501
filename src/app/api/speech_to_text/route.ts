@@ -1,6 +1,8 @@
+import { checkUserPermission, verifyToken } from "@/lib/firebase/auth";
 import { db } from "@/lib/firebase/firebaseAdmin";
 import { fileUploadToStorage } from "@/lib/firebase/storage";
 import { FieldValue } from "firebase-admin/firestore";
+import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
@@ -11,6 +13,26 @@ const openai = new OpenAI({
 // resパラメータを削除
 export async function POST(req: Request) {
   try {
+    const headersList = await headers();
+    const authHeader = headersList.get("Authorization");
+    // Tokenが添付されているか
+    if (!authHeader) {
+      return NextResponse.json(
+        { error: "Tokenが添付されていません" },
+        { status: 401 }
+      );
+    }
+
+    const token = authHeader.split("Bearer ")[1];
+    // デコード
+    const user = await verifyToken(token);
+    if (!user) {
+      return NextResponse.json(
+        { error: "無効なトークンです。" },
+        { status: 401 }
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File;
     const chatId = formData.get("chatId") as string;
@@ -18,10 +40,20 @@ export async function POST(req: Request) {
     console.log("file", file);
     console.log("chatId", chatId);
 
+    // firestoreのデータを操作してよいユーザーか
+    const hasPermission = await checkUserPermission(user.uid, chatId);
+
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: "操作が許可されていないか、リソースが存在しません" },
+        { status: 403 }
+      );
+    }
+
     //バイナリデータに変換->保存パスを設定->ストレージにアップロードして参照URLを取得
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const filePath = `${"6miWoueJsIOtQiZ6dH26370GYoJ2"}/chatRoom/${chatId}`;
+    const filePath = `${user.uid}/chatRoom/${chatId}`;
     const url = await fileUploadToStorage(buffer, filePath, file.type);
     console.log("url", url);
 
